@@ -2,8 +2,8 @@ services:
   mirakurun:
     # `latest` can be changed to fix the version
     # `latest` の部分を編集するとバージョンを固定できます
-    # available tags: https://hub.docker.com/r/chinachu/mirakurun/tags
-    image: chinachu/mirakurun:${MIRAKURUN_IMAGE_TAG:-latest}
+    # available tags: https://github.com/Lqm1/Mirakurun-Xit/pkgs/container/mirakurun-xit
+    image: ghcr.io/lqm1/mirakurun-xit:${MIRAKURUN_IMAGE_TAG:-latest}
 
     # 環境変数
     environment:
