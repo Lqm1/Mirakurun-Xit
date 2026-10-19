@@ -553,9 +553,6 @@ export function decodeEPG(data: Buffer, networkId: number): apid.Program[] {
     return programs;
 }
 
-/**
- * returns the channel for Mirakurun from the item of Browse.
- */
 function getChannel(type: apid.ChannelType, item: Item): string {
     switch (type) {
         case "GR":
