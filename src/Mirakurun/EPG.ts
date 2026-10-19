@@ -26,7 +26,7 @@ const STREAM_CONTENT = {
     9: "h.265"
 };
 
-const COMPONENT_TYPE = {
+export const COMPONENT_TYPE = {
     0x01: "480i",
     0x02: "480i",
     0x03: "480i",
@@ -62,7 +62,7 @@ const COMPONENT_TYPE = {
     0xF4: "180p"
 };
 
-const SAMPLING_RATE = {
+export const SAMPLING_RATE = {
     0: -1,
     1: 16000,
     2: 22050,
@@ -465,7 +465,7 @@ function getGenre(content: any): apid.ProgramGenre {
     };
 }
 
-function getLangCode(buffer: Buffer): apid.ProgramAudioLanguageCode {
+export function getLangCode(buffer: Buffer): apid.ProgramAudioLanguageCode {
     for (const code in ISO_639_LANG_CODE) {
         if (ISO_639_LANG_CODE[code].compare(buffer) === 0) {
             return code as apid.ProgramAudioLanguageCode;
