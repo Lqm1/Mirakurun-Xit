@@ -96,6 +96,8 @@
   remoteMirakurunHost: 192.168.x.x # String
   remoteMirakurunPort: 40772 # Integer
   remoteMirakurunDecoder: false # Boolean
+  # Xit AirBox用
+  xitAirBoxHost: 192.168.x.x # String
   # 以下はオプション
   decoder: cmd # String
   isDisabled: false # Boolean
@@ -117,6 +119,16 @@
 # これは実装例です。テスト用のみ。
 sudo npm install arib-b25-stream-test -g --unsafe-perm
 ```
+
+#### xitAirBoxHost
+
+Xit AirBox (XIT-AIR120CW 等) の IP アドレスを指定すると、チューナーとして使用します。
+
+- ペアリングは自動で行われ、ペアリング鍵は `AIRBOX_DB_PATH` に保存して再利用されます。
+  - Docker ホスト (デフォルト): `/opt/mirakurun/data/airbox.json`
+  - Linux (レガシー): `/usr/local/var/db/mirakurun/airbox.json`
+- サービスと EPG は本体から取得します。チャンネルはチャンネルスキャンで設定できます。
+- ストリームは本体で H.264/AAC にトランスコードされた 1 サービスのみのため、`decoder` は不要です。
 
 ## 🗒️channels.yml
 

@@ -96,6 +96,8 @@
   remoteMirakurunHost: 192.168.x.x # String
   remoteMirakurunPort: 40772 # Integer
   remoteMirakurunDecoder: false # Boolean
+  # For Xit AirBox
+  xitAirBoxHost: 192.168.x.x # String
   # Optional parameters below
   decoder: cmd # String
   isDisabled: false # Boolean
@@ -117,6 +119,16 @@ Specify the CAS processing command as needed.
 # This is an implementation example. For testing only.
 sudo npm install arib-b25-stream-test -g --unsafe-perm
 ```
+
+#### xitAirBoxHost
+
+Specify the IP address of Xit AirBox (e.g. XIT-AIR120CW) to use it as a tuner.
+
+- Pairing is done automatically, and the pairing key is stored in `AIRBOX_DB_PATH` to be reused.
+  - Docker Host (Default): `/opt/mirakurun/data/airbox.json`
+  - Linux (Legacy): `/usr/local/var/db/mirakurun/airbox.json`
+- Services and EPG are fetched from the device. Channels can be configured by the channel scan.
+- The stream is a single service transcoded to H.264/AAC by the device, so `decoder` is not needed.
 
 ## 🗒️channels.yml
 
