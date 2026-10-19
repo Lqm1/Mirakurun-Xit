@@ -183,6 +183,11 @@ export class Tuner {
     }
 
     async getServices(channel: ChannelItem, user: Partial<common.User> = {}): Promise<apid.Service[]> {
+        const xitAirBoxDevice = this._getDevicesByType(channel.type).find(device => device.isXitAirBox);
+        if (xitAirBoxDevice) {
+            return xitAirBoxDevice.getRemoteServices(channel);
+        }
+
         const tsFilter = await this._initTS({
             id: "Mirakurun:getServices()",
             priority: -1,
@@ -246,7 +251,7 @@ export class Tuner {
         const tuners = _.config.tuners;
 
         tuners.forEach((tuner, i) => {
-            if (!tuner.name || !tuner.types || (!tuner.remoteMirakurunHost && !tuner.command)) {
+            if (!tuner.name || !tuner.types || (!tuner.remoteMirakurunHost && !tuner.xitAirBoxHost && !tuner.command)) {
                 log.error("missing required property in tuner#%s configuration", i);
                 return;
             }
@@ -262,7 +267,7 @@ export class Tuner {
                 return;
             }
 
-            if (!tuner.remoteMirakurunHost && typeof tuner.command !== "string") {
+            if (!tuner.remoteMirakurunHost && !tuner.xitAirBoxHost && typeof tuner.command !== "string") {
                 log.error("invalid type of property `command` in tuner#%s configuration", i);
                 return;
             }
@@ -284,6 +289,11 @@ export class Tuner {
 
             if (tuner.remoteMirakurunDecoder !== undefined && typeof tuner.remoteMirakurunDecoder !== "boolean") {
                 log.error("invalid type of property `remoteMirakurunDecoder` in tuner#%s configuration", i);
+                return;
+            }
+
+            if (tuner.xitAirBoxHost && typeof tuner.xitAirBoxHost !== "string") {
+                log.error("invalid type of property `xitAirBoxHost` in tuner#%s configuration", i);
                 return;
             }
 
@@ -319,7 +329,7 @@ export class Tuner {
         }
 
         while (tryCount > 0) {
-            const device = this._pickTunerDevice(devices, setting.channel, user.priority);
+            const device = this._pickTunerDevice(devices, setting.channel, user.priority, setting.serviceId);
 
             if (device === null) {
                 // retry
@@ -375,7 +385,7 @@ export class Tuner {
     ): Promise<boolean> {
         const setting = user.streamSetting;
 
-        const remoteDevice = devices.find(device => device.isRemote);
+        const remoteDevice = devices.find(device => device.isRemote || device.isXitAirBox);
         if (remoteDevice && setting.networkId !== undefined && setting.parseEIT === true) {
             try {
                 const programs = await remoteDevice.getRemotePrograms({ networkId: setting.networkId });
@@ -400,11 +410,16 @@ export class Tuner {
     private _pickTunerDevice(
         devices: TunerDevice[],
         channel: ChannelItem,
-        priority: number
+        priority: number,
+        serviceId?: number
     ): TunerDevice | null {
         // 1. join to existing
         for (const device of devices) {
             if (device.isAvailable === true && device.channel === channel) {
+                // Xit AirBox streams only one service
+                if (device.isXitAirBox && serviceId && device.serviceId !== serviceId) {
+                    continue;
+                }
                 return device;
             }
         }

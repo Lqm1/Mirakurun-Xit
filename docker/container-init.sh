@@ -6,6 +6,7 @@ export CHANNELS_CONFIG_PATH=/app-config/channels.yml
 export SERVICES_DB_PATH=/app-data/services.json
 export PROGRAMS_DB_PATH=/app-data/programs.json
 export LOGO_DATA_DIR_PATH=/app-data/logo-data
+export AIRBOX_DB_PATH=/app-data/airbox.json
 
 export PATH=/opt/bin:$PATH
 export DOCKER=YES

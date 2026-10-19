@@ -277,7 +277,7 @@ export const TunersConfigView: React.FC = () => {
                                 </td>
                                 <td>
                                     <div className="tuner-options-grid">
-                                        {!tuner.remoteMirakurunHost && (
+                                        {!tuner.remoteMirakurunHost && !tuner.xitAirBoxHost && (
                                             <>
                                                 <FormGroup label="Command">
                                                     <InputGroup
@@ -307,7 +307,7 @@ export const TunersConfigView: React.FC = () => {
                                                 </FormGroup>
                                             </>
                                         )}
-                                        {!tuner.command && (
+                                        {!tuner.command && !tuner.xitAirBoxHost && (
                                             <>
                                                 <div className="remote-mirakurun-group">
                                                     <FormGroup label="Remote Mirakurun Host" style={{ flex: 1 }}>
@@ -355,6 +355,21 @@ export const TunersConfigView: React.FC = () => {
                                                     />
                                                 </div>
                                             </>
+                                        )}
+                                        {!tuner.command && !tuner.remoteMirakurunHost && (
+                                            <FormGroup label="Xit AirBox Host">
+                                                <InputGroup
+                                                    value={tuner.xitAirBoxHost || ""}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        if (val === "") {
+                                                            deleteTunerProperty(i, "xitAirBoxHost");
+                                                        } else if (/^[0-9a-z\.]+$/.test(val)) {
+                                                            updateTuner(i, { xitAirBoxHost: val });
+                                                        }
+                                                    }}
+                                                />
+                                            </FormGroup>
                                         )}
                                         {(!tuner.remoteMirakurunHost || !tuner.remoteMirakurunDecoder) && (
                                             <FormGroup label="Decoder">

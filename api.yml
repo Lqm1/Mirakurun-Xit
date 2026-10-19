@@ -604,6 +604,8 @@ definitions:
         type: integer
       remoteMirakurunDecoder:
         type: boolean
+      xitAirBoxHost:
+        type: string
       decoder:
         type: string
       isDisabled:

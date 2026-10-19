@@ -25,6 +25,7 @@ import status from "./status";
 import Event from "./Event";
 import ChannelItem from "./ChannelItem";
 import TSFilter from "./TSFilter";
+import XitAirBox from "./XitAirBox";
 import Client, { ProgramsQuery } from "../client";
 
 interface User extends common.User {
@@ -47,6 +48,7 @@ export interface TunerDeviceStatus {
 
 export default class TunerDevice extends EventEmitter {
     private _channel: ChannelItem = null;
+    private _serviceId: number = null;
     private _command: string = null;
     private _process: child_process.ChildProcess = null;
     private _stream: stream.Readable = null;
@@ -55,6 +57,7 @@ export default class TunerDevice extends EventEmitter {
 
     private _isAvailable = true;
     private _isRemote = false;
+    private _xitAirBox: XitAirBox = null;
     private _isFault = false;
     private _fatalCount = 0;
     private _exited = false;
@@ -63,6 +66,9 @@ export default class TunerDevice extends EventEmitter {
     constructor(private _index: number, private _config: apid.ConfigTunersItem) {
         super();
         this._isRemote = !!this._config.remoteMirakurunHost;
+        if (this._config.xitAirBoxHost) {
+            this._xitAirBox = new XitAirBox(this._config.xitAirBoxHost);
+        }
         Event.emit("tuner", "create", this.toJSON());
         log.debug("TunerDevice#%d initialized", this._index);
     }
@@ -77,6 +83,11 @@ export default class TunerDevice extends EventEmitter {
 
     get channel(): ChannelItem {
         return this._channel;
+    }
+
+    /** streaming service of Xit AirBox (it streams only one service) */
+    get serviceId(): number {
+        return this._serviceId;
     }
 
     get command(): string {
@@ -114,6 +125,10 @@ export default class TunerDevice extends EventEmitter {
 
     get isRemote(): boolean {
         return this._isRemote;
+    }
+
+    get isXitAirBox(): boolean {
+        return this._xitAirBox !== null;
     }
 
     get isFree(): boolean {
@@ -176,17 +191,19 @@ export default class TunerDevice extends EventEmitter {
                 throw new Error(util.format("TunerDevice#%d is not supported for channel type `%s`", this._index, channel.type));
             }
 
+            const serviceId = this._xitAirBox ? user.streamSetting.serviceId : undefined;
+
             if (this._stream) {
-                if (channel.channel !== this._channel.channel) {
+                if (channel.channel !== this._channel.channel || (serviceId && serviceId !== this._serviceId)) {
                     if (user.priority <= this.getPriority()) {
                         throw new Error(util.format("TunerDevice#%d has higher priority user", this._index));
                     }
 
                     await this._kill(true);
-                    this._spawn(channel);
+                    this._spawn(channel, serviceId);
                 }
             } else {
-                this._spawn(channel);
+                this._spawn(channel, serviceId);
             }
         }
 
@@ -223,6 +240,16 @@ export default class TunerDevice extends EventEmitter {
     }
 
     async getRemotePrograms(query?: ProgramsQuery): Promise<apid.Program[]> {
+        if (this._xitAirBox) {
+            log.debug("TunerDevice#%d fetching Xit AirBox programs from %s...", this._index, this._xitAirBox.host);
+
+            const programs = await this._xitAirBox.getPrograms(query.networkId);
+
+            log.info("TunerDevice#%d fetched %d Xit AirBox programs", this._index, programs.length);
+
+            return programs;
+        }
+
         if (!this._isRemote) {
             throw new Error(util.format("TunerDevice#%d is not remote device", this._index));
         }
@@ -241,7 +268,21 @@ export default class TunerDevice extends EventEmitter {
         return programs;
     }
 
-    private _spawn(ch: ChannelItem): void {
+    async getRemoteServices(channel: ChannelItem): Promise<apid.Service[]> {
+        if (!this._xitAirBox) {
+            throw new Error(util.format("TunerDevice#%d is not Xit AirBox device", this._index));
+        }
+
+        log.debug("TunerDevice#%d fetching Xit AirBox services from %s...", this._index, this._xitAirBox.host);
+
+        const services = await this._xitAirBox.getServices(channel.type, channel.channel);
+
+        log.info("TunerDevice#%d fetched %d Xit AirBox services", this._index, services.length);
+
+        return services;
+    }
+
+    private _spawn(ch: ChannelItem, serviceId?: number): void {
         log.debug("TunerDevice#%d spawn...", this._index);
 
         if (this._process) {
@@ -258,6 +299,14 @@ export default class TunerDevice extends EventEmitter {
             cmd += " " + ch.channel;
             if (this._config.remoteMirakurunDecoder === true) {
                 cmd += " decode";
+            }
+        } else if (this._xitAirBox) {
+            cmd = "node lib/airbox";
+            cmd += " " + this._config.xitAirBoxHost;
+            cmd += " " + ch.type;
+            cmd += " " + ch.channel;
+            if (serviceId) {
+                cmd += " " + serviceId;
             }
         } else {
             cmd = this._config.command;
@@ -276,6 +325,7 @@ export default class TunerDevice extends EventEmitter {
         this._process = child_process.spawn(parsed.command, parsed.args);
         this._command = cmd;
         this._channel = ch;
+        this._serviceId = serviceId || null;
 
         if (this._config.dvbDevicePath) {
             const cat = child_process.spawn("cat", [this._config.dvbDevicePath]);
@@ -412,12 +462,13 @@ export default class TunerDevice extends EventEmitter {
             log.warn("TunerDevice#%d respawning because request has not closed", this._index);
             ++status.errorCount.tunerDeviceRespawn;
 
-            this._spawn(this._channel);
+            this._spawn(this._channel, this._serviceId);
             return;
         }
 
         this._fatalCount = 0;
         this._channel = null;
+        this._serviceId = null;
         this._users.clear();
 
         if (this._isFault === false) {

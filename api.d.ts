@@ -311,6 +311,8 @@ export interface ConfigTunersItem {
     remoteMirakurunPort?: number;
     /** [remote] `true` to use remote decoder. `false` to use local decoder. (if decoder specified) */
     remoteMirakurunDecoder?: boolean;
+    /** [xit] specify to use Xit AirBox host like as `192.168.1.x`. */
+    xitAirBoxHost?: string;
     /** CAS processor command if needed. */
     decoder?: string;
     /** `true` to **disable** this tuner. */
